@@ -15,12 +15,15 @@ def load_data():
     dataframes = []
     
     # Sütun isimlerini eşitleme sözlüğü
+        # Sütun isimlerini eşitleme sözlüğü
     sutun_degisimleri = {
         'Home': 'HomeTeam', 'Away': 'AwayTeam',
         'HGFT': 'FTHG', 'AGFT': 'FTAG',
         'HG1st': 'HTHG', 'AG1st': 'HTAG',
-        'bet365-H': 'B365H', 'bet365-D': 'B365D', 'bet365-A': 'B365A'
+        'bet365-H': 'B365H', 'bet365-D': 'B365D', 'bet365-A': 'B365A',
+        'HG': 'FTHG', 'AG': 'FTAG', 'Res': 'FTR'
     }
+
     
     for dosya in tum_dosyalar:
         try:
