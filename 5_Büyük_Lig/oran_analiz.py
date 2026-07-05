@@ -8,10 +8,10 @@ import numpy as np
 st.set_page_config(page_title="Oran Analiz Paneli", layout="wide")
 st.title("⚽ Gelişmiş Futbol Oran Analizörü")
 
+# CACHE İSMİNİ DEĞİŞTİRDİK (Sunucuyu sıfırlamaya zorlar)
 @st.cache_data
-def load_data():
-    klasor_yolu = "5_Büyük_Lig"
-    tum_dosyalar = glob.glob(os.path.join(klasor_yolu, "*.csv"))
+def verileri_oku_v2():
+    tum_dosyalar = glob.glob("**/*.csv", recursive=True)
     dataframes = []
     
     # Sütun isimlerini eşitleme sözlüğü
@@ -67,7 +67,7 @@ def load_data():
     return pd.DataFrame()
 
 # Veriyi Yükle
-df = load_data()
+df = verileri_oku_v2()
 
 if df.empty:
     st.error("Veriler okunamadı. Klasör yolunu kontrol et.")
