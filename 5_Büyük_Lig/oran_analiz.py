@@ -15,15 +15,14 @@ def load_data():
     dataframes = []
     
     # Sütun isimlerini eşitleme sözlüğü
-        # Sütun isimlerini eşitleme sözlüğü
     sutun_degisimleri = {
         'Home': 'HomeTeam', 'Away': 'AwayTeam',
         'HGFT': 'FTHG', 'AGFT': 'FTAG',
         'HG1st': 'HTHG', 'AG1st': 'HTAG',
         'bet365-H': 'B365H', 'bet365-D': 'B365D', 'bet365-A': 'B365A',
-        'HG': 'FTHG', 'AG': 'FTAG', 'Res': 'FTR'
+        'HG': 'FTHG', 'AG': 'FTAG', 'Res': 'FTR',
+        'Div': 'Lig', 'League': 'Lig', 'Competition': 'Lig'
     }
-
     
     for dosya in tum_dosyalar:
         try:
@@ -103,9 +102,17 @@ else:
     st.sidebar.subheader("2.5 Alt / Üst Oranları")
     acilis_ust = st.sidebar.number_input("2.5 Üst Açılış (B365>2.5)", min_value=1.01, value=None, step=0.01, placeholder="Boş")
     kapanis_ust = st.sidebar.number_input("2.5 Üst Kapanış (B365C>2.5)", min_value=1.01, value=None, step=0.01, placeholder="Boş")
+    # --- YENİ: LİG FİLTRESİ ---
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("🌍 Lig Filtresi")
+    mevcut_ligler = sorted(df['Lig'].dropna().unique().tolist()) if 'Lig' in df.columns else []
+    secilen_ligler = st.sidebar.multiselect("Lig Seçin (Boş bırakırsanız tümü gelir)", mevcut_ligler)
+    
     # --- DİNAMİK FİLTRELEME MANTIĞI ---
     sonuclar = df.copy()
 
+    if secilen_ligler and 'Lig' in sonuclar.columns:
+        sonuclar = sonuclar[sonuclar['Lig'].isin(secilen_ligler)]
     # Açılış Filtreleri
     if acilis_ms1 is not None and 'B365H' in sonuclar.columns:
         sonuclar = sonuclar.dropna(subset=['B365H'])
@@ -153,7 +160,7 @@ else:
             sonuclar['MS_Skor'] = sonuclar['FTHG'].astype(str).str.split('.').str[0] + "-" + sonuclar['FTAG'].astype(str).str.split('.').str[0]
         
         gosterilecek_kolonlar = [
-            'Date', 'Source_File', 'HomeTeam', 'AwayTeam', 'İY_Skor', 'MS_Skor', 'FTR',
+            'Lig', 'Date', 'Source_File', 'HomeTeam', 'AwayTeam', 'İY_Skor', 'MS_Skor', 'FTR',
             'B365H', 'B365D', 'B365A', 'B365CH', 'B365CD', 'B365CA'
         ]
         mevcut_gosterim = [col for col in gosterilecek_kolonlar if col in sonuclar.columns]
