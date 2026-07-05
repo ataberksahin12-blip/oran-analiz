@@ -10,17 +10,16 @@ st.title("⚽ Gelişmiş Futbol Oran Analizörü")
 
 @st.cache_data
 def load_data():
-    klasor_yolu = "5_Büyük_Lig"
-    tum_dosyalar = glob.glob(os.path.join(klasor_yolu, "*.csv"))
+    tum_dosyalar = glob.glob("**/*.csv", recursive=True)
     dataframes = []
     
-    # Sütun isimlerini eşitleme sözlüğü
+    # Sütun isimlerini eşitleme sözlüğü (H_Avg ve Lig kısımları eklendi)
     sutun_degisimleri = {
         'Home': 'HomeTeam', 'Away': 'AwayTeam',
         'HGFT': 'FTHG', 'AGFT': 'FTAG',
         'HG1st': 'HTHG', 'AG1st': 'HTAG',
         'bet365-H': 'B365H', 'bet365-D': 'B365D', 'bet365-A': 'B365A',
-        'H_Avg': 'B365H', 'D_Avg': 'B365D', 'A_Avg': 'B365A', # Elemeler için eklendi
+        'H_Avg': 'B365H', 'D_Avg': 'B365D', 'A_Avg': 'B365A',
         'HG': 'FTHG', 'AG': 'FTAG', 'Res': 'FTR',
         'Div': 'Lig', 'League': 'Lig', 'Competition': 'Lig'
     }
@@ -37,6 +36,8 @@ def load_data():
             gecici_df.rename(columns=sutun_degisimleri, inplace=True)
             gecici_df.columns = gecici_df.columns.str.replace(' ', '')
             gecici_df['Source_File'] = dosya_adi
+            
+            # ZIRH: Eğer lig sütunu yoksa, dosyanın adını lig ismi yap (Örn: WorldCupQualifiers)
             if 'Lig' not in gecici_df.columns:
                 gecici_df['Lig'] = dosya_adi.replace('.csv', '')
                 
@@ -47,7 +48,7 @@ def load_data():
     if len(dataframes) > 0:
         df = pd.concat(dataframes, ignore_index=True)
         
-        # --- ZIRH 1: FTR (Maç Sonucu 1-X-2) EKSİKSE KENDİN HESAPLA ---
+        # ZIRH 1: FTR (Maç Sonucu 1-X-2) EKSİKSE KENDİN HESAPLA
         if 'FTR' not in df.columns or df['FTR'].isnull().all():
             if 'FTHG' in df.columns and 'FTAG' in df.columns:
                 conditions = [
@@ -55,14 +56,13 @@ def load_data():
                     (df['FTHG'] == df['FTAG']),
                     (df['FTHG'] < df['FTAG'])
                 ]
-                choices = ['H', 'D', 'A'] # H: Home, D: Draw, A: Away
+                choices = ['H', 'D', 'A']
                 df['FTR'] = np.select(conditions, choices, default=np.nan)
                 
-        # --- ZIRH 2: ORANLARI KESİN SAYIYA (FLOAT) ÇEVİR ---
+        # ZIRH 2: ORANLARI KESİN SAYIYA (FLOAT) ÇEVİR VE VİRGÜLLERİ TEMİZLE
         oran_sutunlari = ['B365H', 'B365D', 'B365A', 'B365CH', 'B365CD', 'B365CA']
         for col in oran_sutunlari:
             if col in df.columns:
-                # Eğer içinde virgül varsa noktaya çevir
                 if df[col].dtype == object:
                     df[col] = df[col].astype(str).str.replace(',', '.')
                 df[col] = pd.to_numeric(df[col], errors='coerce')
