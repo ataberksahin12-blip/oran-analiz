@@ -9,11 +9,11 @@ st.set_page_config(page_title="Oran Analiz Paneli", layout="wide")
 st.title("⚽ Gelişmiş Futbol Oran Analizörü")
 
 @st.cache_data
-def load_data():
+def verileri_oku_v2():
     tum_dosyalar = glob.glob("**/*.csv", recursive=True)
     dataframes = []
     
-    # Sütun isimlerini eşitleme sözlüğü (H_Avg ve Lig kısımları eklendi)
+    # Sütun isimlerini eşitleme sözlüğü
     sutun_degisimleri = {
         'Home': 'HomeTeam', 'Away': 'AwayTeam',
         'HGFT': 'FTHG', 'AGFT': 'FTAG',
@@ -32,12 +32,12 @@ def load_data():
             else:
                 gecici_df = pd.read_csv(dosya, encoding='latin1')
                 
-            # İsimleri standartlaştır ve boşlukları sil
+            # İsimleri standartlaştır
             gecici_df.rename(columns=sutun_degisimleri, inplace=True)
             gecici_df.columns = gecici_df.columns.str.replace(' ', '')
             gecici_df['Source_File'] = dosya_adi
             
-            # ZIRH: Eğer lig sütunu yoksa, dosyanın adını lig ismi yap (Örn: WorldCupQualifiers)
+            # --- ZIRH: EĞER LİG SÜTUNU YOKSA, DOSYA ADINI LİG YAP ---
             if 'Lig' not in gecici_df.columns:
                 gecici_df['Lig'] = dosya_adi.replace('.csv', '')
                 
@@ -48,7 +48,13 @@ def load_data():
     if len(dataframes) > 0:
         df = pd.concat(dataframes, ignore_index=True)
         
-        # ZIRH 1: FTR (Maç Sonucu 1-X-2) EKSİKSE KENDİN HESAPLA
+        # Lig isimlerindeki sağ/sol gereksiz boşlukları sil (İsveç, Finlandiya vb. için)
+        if 'Lig' in df.columns:
+            df['Lig'] = df['Lig'].astype(str).str.strip()
+            # Dosya adı olanları daha şık gösterelim
+            df['Lig'] = df['Lig'].replace('WorldCupQualifiers', 'Dünya Kupası Elemeleri')
+        
+        # FTR (Maç Sonucu) eksikse hesapla
         if 'FTR' not in df.columns or df['FTR'].isnull().all():
             if 'FTHG' in df.columns and 'FTAG' in df.columns:
                 conditions = [
@@ -59,7 +65,7 @@ def load_data():
                 choices = ['H', 'D', 'A']
                 df['FTR'] = np.select(conditions, choices, default=np.nan)
                 
-        # ZIRH 2: ORANLARI KESİN SAYIYA (FLOAT) ÇEVİR VE VİRGÜLLERİ TEMİZLE
+        # Oranları kesin sayıya çevir
         oran_sutunlari = ['B365H', 'B365D', 'B365A', 'B365CH', 'B365CD', 'B365CA']
         for col in oran_sutunlari:
             if col in df.columns:
@@ -69,9 +75,8 @@ def load_data():
                 
         return df
     return pd.DataFrame()
-
 # Veriyi Yükle
-df = load_data()
+df = verileri_oku_v2()
 
 if df.empty:
     st.error("Veriler okunamadı. Klasör yolunu kontrol et.")
