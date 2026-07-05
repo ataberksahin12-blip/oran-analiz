@@ -8,7 +8,6 @@ import numpy as np
 st.set_page_config(page_title="Oran Analiz Paneli", layout="wide")
 st.title("⚽ Gelişmiş Futbol Oran Analizörü")
 
-# CACHE İSMİNİ DEĞİŞTİRDİK (Sunucuyu sıfırlamaya zorlar)
 @st.cache_data
 def verileri_oku_v2():
     tum_dosyalar = glob.glob("**/*.csv", recursive=True)
@@ -20,6 +19,7 @@ def verileri_oku_v2():
         'HGFT': 'FTHG', 'AGFT': 'FTAG',
         'HG1st': 'HTHG', 'AG1st': 'HTAG',
         'bet365-H': 'B365H', 'bet365-D': 'B365D', 'bet365-A': 'B365A',
+        'H_Avg': 'B365H', 'D_Avg': 'B365D', 'A_Avg': 'B365A',
         'HG': 'FTHG', 'AG': 'FTAG', 'Res': 'FTR',
         'Div': 'Lig', 'League': 'Lig', 'Competition': 'Lig'
     }
@@ -32,10 +32,15 @@ def verileri_oku_v2():
             else:
                 gecici_df = pd.read_csv(dosya, encoding='latin1')
                 
-            # İsimleri standartlaştır ve boşlukları sil
+            # İsimleri standartlaştır
             gecici_df.rename(columns=sutun_degisimleri, inplace=True)
             gecici_df.columns = gecici_df.columns.str.replace(' ', '')
             gecici_df['Source_File'] = dosya_adi
+            
+            # --- ZIRH: EĞER LİG SÜTUNU YOKSA, DOSYA ADINI LİG YAP ---
+            if 'Lig' not in gecici_df.columns:
+                gecici_df['Lig'] = dosya_adi.replace('.csv', '')
+                
             dataframes.append(gecici_df)
         except Exception as e:
             pass
@@ -43,7 +48,13 @@ def verileri_oku_v2():
     if len(dataframes) > 0:
         df = pd.concat(dataframes, ignore_index=True)
         
-        # --- ZIRH 1: FTR (Maç Sonucu 1-X-2) EKSİKSE KENDİN HESAPLA ---
+        # Lig isimlerindeki sağ/sol gereksiz boşlukları sil (İsveç, Finlandiya vb. için)
+        if 'Lig' in df.columns:
+            df['Lig'] = df['Lig'].astype(str).str.strip()
+            # Dosya adı olanları daha şık gösterelim
+            df['Lig'] = df['Lig'].replace('WorldCupQualifiers', 'Dünya Kupası Elemeleri')
+        
+        # FTR (Maç Sonucu) eksikse hesapla
         if 'FTR' not in df.columns or df['FTR'].isnull().all():
             if 'FTHG' in df.columns and 'FTAG' in df.columns:
                 conditions = [
@@ -51,21 +62,19 @@ def verileri_oku_v2():
                     (df['FTHG'] == df['FTAG']),
                     (df['FTHG'] < df['FTAG'])
                 ]
-                choices = ['H', 'D', 'A'] # H: Home, D: Draw, A: Away
+                choices = ['H', 'D', 'A']
                 df['FTR'] = np.select(conditions, choices, default=np.nan)
                 
-        # --- ZIRH 2: ORANLARI KESİN SAYIYA (FLOAT) ÇEVİR ---
+        # Oranları kesin sayıya çevir
         oran_sutunlari = ['B365H', 'B365D', 'B365A', 'B365CH', 'B365CD', 'B365CA']
         for col in oran_sutunlari:
             if col in df.columns:
-                # Eğer içinde virgül varsa noktaya çevir
                 if df[col].dtype == object:
                     df[col] = df[col].astype(str).str.replace(',', '.')
                 df[col] = pd.to_numeric(df[col], errors='coerce')
                 
         return df
     return pd.DataFrame()
-
 # Veriyi Yükle
 df = verileri_oku_v2()
 
