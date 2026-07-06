@@ -55,19 +55,29 @@ def verileri_oku_v3():
             df.loc[df['Lig'].str.contains('World Cup', case=False, na=False) & ~df['Lig'].str.contains('Qualifiers', case=False, na=False), 'Lig'] = 'Dünya Kupası'
             df['Lig'] = df['Lig'].replace('WorldCupQualifiers', 'Dünya Kupası Elemeleri')
             
-            # YENİ KURAL: Ekstra Liglerdeki İsim Çakışmasını (İsviçre/Çin) Ülke Adıyla Çözme
+            # 1. YÖNTEM: Dosyada 'Country' kolonu varsa onu kullan
             if 'Country' in df.columns:
                 df['Country'] = df['Country'].astype(str).str.strip()
-                mask = df['Country'].notna() & (df['Country'] != 'nan') & (df['Country'] != '')
+                mask = (df['Country'] != 'nan') & (df['Country'] != '') & (df['Country'].notna())
                 df.loc[mask, 'Lig'] = df.loc[mask, 'Country'] + ' - ' + df.loc[mask, 'Lig']
             
-            # Kodlu isimleri gerçek isimlere çevirir (Majör Ligler İçin)
+            # 2. YÖNTEM (KESİN ÇÖZÜM): Dosyada 'Country' yoksa dosya adından (Source_File) zorla ayır
+            cince_mask = (df['Lig'] == 'Super League') & df['Source_File'].str.contains('CHN', case=False, na=False)
+            df.loc[cince_mask, 'Lig'] = 'China - Super League'
+            
+            isvicre_mask = (df['Lig'] == 'Super League') & df['Source_File'].str.contains('SWZ', case=False, na=False)
+            df.loc[isvicre_mask, 'Lig'] = 'Switzerland - Super League'
+            
+            yunan_mask = (df['Lig'] == 'Super League') & df['Source_File'].str.contains('G1', case=False, na=False)
+            df.loc[yunan_mask, 'Lig'] = 'Greece - Super League'
+            
+            # Majör Liglerin Kodlarını Gerçek İsimlere Çevirme
             lig_isimleri = {
                 'E0': 'Premier League (İngiltere)', 'E1': 'Championship (İngiltere)',
                 'D1': 'Bundesliga (Almanya)', 'D2': '2. Bundesliga (Almanya)',
                 'I1': 'Serie A (İtalya)', 'SP1': 'La Liga (İspanya)',
                 'F1': 'Ligue 1 (Fransa)', 'N1': 'Eredivisie (Hollanda)',
-                'T1': 'Süper Lig (Türkiye)', 'WorldCup': 'Dünya Kupası'
+                'T1': 'Süper Lig (Türkiye)'
             }
             df['Lig'] = df['Lig'].replace(lig_isimleri)
         
@@ -92,6 +102,7 @@ def verileri_oku_v3():
                 
         return df
     return pd.DataFrame()
+
 
 df = verileri_oku_v3()
 
