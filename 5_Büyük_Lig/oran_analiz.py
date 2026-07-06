@@ -55,7 +55,13 @@ def verileri_oku_v3():
             df.loc[df['Lig'].str.contains('World Cup', case=False, na=False) & ~df['Lig'].str.contains('Qualifiers', case=False, na=False), 'Lig'] = 'Dünya Kupası'
             df['Lig'] = df['Lig'].replace('WorldCupQualifiers', 'Dünya Kupası Elemeleri')
             
-            # Kodlu isimleri gerçek isimlere çevirir
+            # YENİ KURAL: Ekstra Liglerdeki İsim Çakışmasını (İsviçre/Çin) Ülke Adıyla Çözme
+            if 'Country' in df.columns:
+                df['Country'] = df['Country'].astype(str).str.strip()
+                mask = df['Country'].notna() & (df['Country'] != 'nan') & (df['Country'] != '')
+                df.loc[mask, 'Lig'] = df.loc[mask, 'Country'] + ' - ' + df.loc[mask, 'Lig']
+            
+            # Kodlu isimleri gerçek isimlere çevirir (Majör Ligler İçin)
             lig_isimleri = {
                 'E0': 'Premier League (İngiltere)', 'E1': 'Championship (İngiltere)',
                 'D1': 'Bundesliga (Almanya)', 'D2': '2. Bundesliga (Almanya)',
@@ -86,7 +92,6 @@ def verileri_oku_v3():
                 
         return df
     return pd.DataFrame()
-
 
 df = verileri_oku_v3()
 
