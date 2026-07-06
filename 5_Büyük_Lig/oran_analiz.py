@@ -13,12 +13,12 @@ def verileri_oku_v3():
     tum_dosyalar = glob.glob("**/*.csv", recursive=True)
     dataframes = []
     
+    # Sadece saf Bet365 oranlarına odaklanan yapı
     sutun_degisimleri = {
         'Home': 'HomeTeam', 'Away': 'AwayTeam',
         'HGFT': 'FTHG', 'AGFT': 'FTAG',
         'HG1st': 'HTHG', 'AG1st': 'HTAG',
         'bet365-H': 'B365H', 'bet365-D': 'B365D', 'bet365-A': 'B365A',
-        'H_Avg': 'B365H', 'D_Avg': 'B365D', 'A_Avg': 'B365A',
         'HG': 'FTHG', 'AG': 'FTAG', 'Res': 'FTR',
         'Div': 'Lig', 'League': 'Lig', 'Competition': 'Lig'
     }
@@ -51,7 +51,6 @@ def verileri_oku_v3():
         
         df = df.drop_duplicates(subset=['Date', 'HomeTeam', 'AwayTeam'])
         
-        # Dünya Kupası FTR (Maç Sonucu) Boşluk Doldurma Düzeltmesi
         if 'FTR' not in df.columns:
             df['FTR'] = np.nan
             
@@ -71,12 +70,11 @@ def verileri_oku_v3():
         return df
     return pd.DataFrame()
 
-# --- ARAYÜZ VE ANALİZ KODLARI BURADAN BAŞLIYOR ---
 
 df = verileri_oku_v3()
 
 if df.empty:
-    st.error("Veriler okunamadı. Klasör yolunu kontrol et veya GitHub deponda CSV dosyalarının olduğuna emin ol.")
+    st.error("Veriler okunamadı. Klasör yolunu kontrol et.")
 else:
     st.sidebar.success(f"Toplam {len(df)} tekil maç yüklendi.")
     
@@ -138,7 +136,6 @@ else:
         st.info("👈 Lütfen sol menüden lig veya oran girin.")
     elif len(sonuclar) > 0:
         
-        # HFA VE VALUE DEĞER ANALİZİ PANELİ
         st.markdown("---")
         st.markdown("### 📊 Filtreye Özel Ev Sahibi Avantajı (HFA) ve Değer (Value) Analizi")
         
