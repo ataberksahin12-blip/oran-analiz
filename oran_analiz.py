@@ -1,3 +1,13 @@
+import streamlit as st
+import pandas as pd
+import glob
+import os
+import numpy as np
+
+# Sayfa Yapılandırması
+st.set_page_config(page_title="Oran Analiz Paneli", layout="wide")
+st.title("⚽ Gelişmiş Futbol Oran Analizörü")
+
 @st.cache_data
 def verileri_oku_v3():
     tum_dosyalar = glob.glob("**/*.csv", recursive=True)
@@ -41,7 +51,6 @@ def verileri_oku_v3():
         
         df = df.drop_duplicates(subset=['Date', 'HomeTeam', 'AwayTeam'])
         
-        # --- YENİ EKLENEN VE DÜZELTİLEN BLOK BURASI ---
         if 'FTR' not in df.columns:
             df['FTR'] = np.nan
             
@@ -50,7 +59,6 @@ def verileri_oku_v3():
             df.loc[eksik_ftr & (df['FTHG'] > df['FTAG']), 'FTR'] = 'H'
             df.loc[eksik_ftr & (df['FTHG'] == df['FTAG']), 'FTR'] = 'D'
             df.loc[eksik_ftr & (df['FTHG'] < df['FTAG']), 'FTR'] = 'A'
-        # ----------------------------------------------
                 
         oran_sutunlari = ['B365H', 'B365D', 'B365A', 'B365CH', 'B365CD', 'B365CA']
         for col in oran_sutunlari:
@@ -61,3 +69,5 @@ def verileri_oku_v3():
                 
         return df
     return pd.DataFrame()
+
+# Kodun geri kalanı buradan itibaren devam edecek (df = verileri_oku_v3() ve sonrası...)
