@@ -13,7 +13,7 @@ def verileri_oku_v3():
     tum_dosyalar = glob.glob("**/*.csv", recursive=True)
     dataframes = []
     
-    # Sadece saf Bet365 oranlarına odaklanan yapı
+    # Sadece saf Bet365 ve Betfair oranlarına odaklanan yapı
     sutun_degisimleri = {
         'Home': 'HomeTeam', 'Away': 'AwayTeam',
         'HGFT': 'FTHG', 'AGFT': 'FTAG',
@@ -45,42 +45,25 @@ def verileri_oku_v3():
     if len(dataframes) > 0:
         df = pd.concat(dataframes, ignore_index=True)
         
-        # --- LİG İSİMLERİNİ TEMİZLEME VE BİRLEŞTİRME BLOKU ---
+        # --- LİG İSİMLERİNİ TEMİZLEME VE BİRLEŞTİRME ---
         if 'Lig' in df.columns:
             df['Lig'] = df['Lig'].astype(str).str.strip()
-            
-            # 1. Dosya isimlerinden gelen "(1)", "(2)" gibi Windows kopya eklerini temizle
+            # Windows'un eklediği (1), (2) gibi kopya numaralarını temizler
             df['Lig'] = df['Lig'].str.replace(r'\s*\(\d+\)', '', regex=True)
             
-            # 2. Yıllara göre ayrılan Dünya Kupası turnuvalarını tek çatıda topla (2014, 2018, 2022 -> Dünya Kupası)
+            # Dünya Kupası yıllarını tek çatıda toplar
             df.loc[df['Lig'].str.contains('World Cup', case=False, na=False) & ~df['Lig'].str.contains('Qualifiers', case=False, na=False), 'Lig'] = 'Dünya Kupası'
             df['Lig'] = df['Lig'].replace('WorldCupQualifiers', 'Dünya Kupası Elemeleri')
             
-            # 3. football-data.co.uk'un anlamsız lig kodlarını gerçek isimlere çevir
+            # Kodlu isimleri gerçek isimlere çevirir
             lig_isimleri = {
-                'E0': 'Premier League (İngiltere)',
-                'E1': 'Championship (İngiltere)',
-                'E2': 'League 1 (İngiltere)',
-                'E3': 'League 2 (İngiltere)',
-                'EC': 'National League (İngiltere)',
-                'SC0': 'Scottish Premiership',
-                'D1': 'Bundesliga (Almanya)',
-                'D2': '2. Bundesliga (Almanya)',
-                'I1': 'Serie A (İtalya)',
-                'I2': 'Serie B (İtalya)',
-                'SP1': 'La Liga (İspanya)',
-                'SP2': 'Segunda Division (İspanya)',
-                'F1': 'Ligue 1 (Fransa)',
-                'F2': 'Ligue 2 (Fransa)',
-                'N1': 'Eredivisie (Hollanda)',
-                'B1': 'Pro League (Belçika)',
-                'P1': 'Primeira Liga (Portekiz)',
-                'T1': 'Süper Lig (Türkiye)',
-                'G1': 'Super League (Yunanistan)',
-                'WorldCup': 'Dünya Kupası'
+                'E0': 'Premier League (İngiltere)', 'E1': 'Championship (İngiltere)',
+                'D1': 'Bundesliga (Almanya)', 'D2': '2. Bundesliga (Almanya)',
+                'I1': 'Serie A (İtalya)', 'SP1': 'La Liga (İspanya)',
+                'F1': 'Ligue 1 (Fransa)', 'N1': 'Eredivisie (Hollanda)',
+                'T1': 'Süper Lig (Türkiye)', 'WorldCup': 'Dünya Kupası'
             }
             df['Lig'] = df['Lig'].replace(lig_isimleri)
-        # --------------------------------------------------
         
         df = df.drop_duplicates(subset=['Date', 'HomeTeam', 'AwayTeam'])
         
@@ -93,7 +76,8 @@ def verileri_oku_v3():
             df.loc[eksik_ftr & (df['FTHG'] == df['FTAG']), 'FTR'] = 'D'
             df.loc[eksik_ftr & (df['FTHG'] < df['FTAG']), 'FTR'] = 'A'
                 
-        oran_sutunlari = ['B365H', 'B365D', 'B365A', 'B365CH', 'B365CD', 'B365CA']
+        # Betfair oranlarını sayısal formata çevirecek listeye ekledik
+        oran_sutunlari = ['B365H', 'B365D', 'B365A', 'B365CH', 'B365CD', 'B365CA', 'BFECH', 'BFECD', 'BFECA']
         for col in oran_sutunlari:
             if col in df.columns:
                 if df[col].dtype == object:
@@ -102,6 +86,7 @@ def verileri_oku_v3():
                 
         return df
     return pd.DataFrame()
+
 
 df = verileri_oku_v3()
 
@@ -113,56 +98,70 @@ else:
     st.sidebar.markdown("---")
     st.sidebar.subheader("🌍 Lig Filtresi")
     mevcut_ligler = sorted(df['Lig'].dropna().unique().tolist()) if 'Lig' in df.columns else []
-    secilen_ligler = st.sidebar.multiselect("Lig Seçin (Boş bırakırsanız tümü gelir)", mevcut_ligler)
+    secilen_ligler = st.sidebar.multiselect("Lig Seçin (Örn: Bundesliga)", mevcut_ligler)
     
     st.sidebar.markdown("---")
     st.sidebar.header("🎯 Oran Filtreleri")
     tolerans = st.sidebar.slider("Tolerans (Esneklik Payı)", min_value=0.00, max_value=0.50, value=0.03, step=0.01)
     
     st.sidebar.markdown("---")
-    st.sidebar.subheader("Açılış Oranları")
+    st.sidebar.subheader("🟩 Bet365 Açılış")
     acilis_ms1 = st.sidebar.number_input("MS 1 Açılış (B365H)", min_value=1.01, value=None, step=0.01, placeholder="Boş")
     acilis_msx = st.sidebar.number_input("MS X Açılış (B365D)", min_value=1.01, value=None, step=0.01, placeholder="Boş")
     acilis_ms2 = st.sidebar.number_input("MS 2 Açılış (B365A)", min_value=1.01, value=None, step=0.01, placeholder="Boş")
     
     st.sidebar.markdown("---")
-    st.sidebar.subheader("Kapanış Oranları")
+    st.sidebar.subheader("🟥 Bet365 Kapanış")
     kapanis_ms1 = st.sidebar.number_input("MS 1 Kapanış (B365CH)", min_value=1.01, value=None, step=0.01, placeholder="Boş")
     kapanis_msx = st.sidebar.number_input("MS X Kapanış (B365CD)", min_value=1.01, value=None, step=0.01, placeholder="Boş")
     kapanis_ms2 = st.sidebar.number_input("MS 2 Kapanış (B365CA)", min_value=1.01, value=None, step=0.01, placeholder="Boş")
+
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("🟨 Betfair Borsa Kapanış")
+    kapanis_bf1 = st.sidebar.number_input("MS 1 Betfair Kapanış (BFECH)", min_value=1.01, value=None, step=0.01, placeholder="Boş")
+    kapanis_bfx = st.sidebar.number_input("MS X Betfair Kapanış (BFECD)", min_value=1.01, value=None, step=0.01, placeholder="Boş")
+    kapanis_bf2 = st.sidebar.number_input("MS 2 Betfair Kapanış (BFECA)", min_value=1.01, value=None, step=0.01, placeholder="Boş")
 
     sonuclar = df.copy()
 
     if secilen_ligler and 'Lig' in sonuclar.columns:
         sonuclar = sonuclar[sonuclar['Lig'].isin(secilen_ligler)]
 
+    # Bet365 Filtreleri
     if acilis_ms1 is not None and 'B365H' in sonuclar.columns:
         sonuclar = sonuclar.dropna(subset=['B365H'])
         sonuclar = sonuclar[sonuclar['B365H'].between(acilis_ms1 - tolerans, acilis_ms1 + tolerans)]
-        
     if acilis_msx is not None and 'B365D' in sonuclar.columns:
         sonuclar = sonuclar.dropna(subset=['B365D'])
         sonuclar = sonuclar[sonuclar['B365D'].between(acilis_msx - tolerans, acilis_msx + tolerans)]
-        
     if acilis_ms2 is not None and 'B365A' in sonuclar.columns:
         sonuclar = sonuclar.dropna(subset=['B365A'])
         sonuclar = sonuclar[sonuclar['B365A'].between(acilis_ms2 - tolerans, acilis_ms2 + tolerans)]
-
+        
     if kapanis_ms1 is not None and 'B365CH' in sonuclar.columns:
         sonuclar = sonuclar.dropna(subset=['B365CH'])
         sonuclar = sonuclar[sonuclar['B365CH'].between(kapanis_ms1 - tolerans, kapanis_ms1 + tolerans)]
-        
     if kapanis_msx is not None and 'B365CD' in sonuclar.columns:
         sonuclar = sonuclar.dropna(subset=['B365CD'])
         sonuclar = sonuclar[sonuclar['B365CD'].between(kapanis_msx - tolerans, kapanis_msx + tolerans)]
-        
     if kapanis_ms2 is not None and 'B365CA' in sonuclar.columns:
         sonuclar = sonuclar.dropna(subset=['B365CA'])
         sonuclar = sonuclar[sonuclar['B365CA'].between(kapanis_ms2 - tolerans, kapanis_ms2 + tolerans)]
 
+    # Betfair Filtreleri
+    if kapanis_bf1 is not None and 'BFECH' in sonuclar.columns:
+        sonuclar = sonuclar.dropna(subset=['BFECH'])
+        sonuclar = sonuclar[sonuclar['BFECH'].between(kapanis_bf1 - tolerans, kapanis_bf1 + tolerans)]
+    if kapanis_bfx is not None and 'BFECD' in sonuclar.columns:
+        sonuclar = sonuclar.dropna(subset=['BFECD'])
+        sonuclar = sonuclar[sonuclar['BFECD'].between(kapanis_bfx - tolerans, kapanis_bfx + tolerans)]
+    if kapanis_bf2 is not None and 'BFECA' in sonuclar.columns:
+        sonuclar = sonuclar.dropna(subset=['BFECA'])
+        sonuclar = sonuclar[sonuclar['BFECA'].between(kapanis_bf2 - tolerans, kapanis_bf2 + tolerans)]
+
     st.subheader(f"📊 Kriterlere Uyan Toplam Maç Sayısı: {len(sonuclar)}")
 
-    filtre_girildi_mi = any(v is not None for v in [acilis_ms1, acilis_msx, acilis_ms2, kapanis_ms1, kapanis_msx, kapanis_ms2])
+    filtre_girildi_mi = any(v is not None for v in [acilis_ms1, acilis_msx, acilis_ms2, kapanis_ms1, kapanis_msx, kapanis_ms2, kapanis_bf1, kapanis_bfx, kapanis_bf2])
 
     if not filtre_girildi_mi and not secilen_ligler:
         st.info("👈 Lütfen sol menüden lig veya oran girin.")
@@ -190,39 +189,22 @@ else:
         m_col3.metric("Deplasman Galibiyet %", f"% {dep_oran:.1f}")
         m_col4.metric("HFA Gol Dominansı", f"+{hfa_gol_avantaji:.2f}" if hfa_gol_avantaji >= 0 else f"{hfa_gol_avantaji:.2f}")
         
-        st.caption(f"**Saha Analizi:** Seçtiğiniz filtrelerde ev sahibi takımlar maç başına ortalama **{ort_ev_gol:.2f}** gol atarken, deplasman takımları **{ort_dep_gol:.2f}** gol atabilmiş.")
-        
         value_verileri = []
         
-        if acilis_ms1 is not None:
-            kitapci_olasilik = (1 / acilis_ms1) * 100
-            value = ev_oran - kitapci_olasilik
-            value_verileri.append({"Bahis Tipi": "MS 1 (Açılış)", "Girdiğiniz Oran": acilis_ms1, "Büro Olasılığı": f"% {kitapci_olasilik:.1f}", "Gerçekleşen Olasılık": f"% {ev_oran:.1f}", "Sapma (Value)": f"{value:+.1f}%", "Durum": "✅ Değerli" if value > 0 else "❌ Değersiz"})
-            
-        if acilis_msx is not None:
-            kitapci_olasilik = (1 / acilis_msx) * 100
-            value = ber_oran - kitapci_olasilik
-            value_verileri.append({"Bahis Tipi": "MS X (Açılış)", "Girdiğiniz Oran": acilis_msx, "Büro Olasılığı": f"% {kitapci_olasilik:.1f}", "Gerçekleşen Olasılık": f"% {ber_oran:.1f}", "Sapma (Value)": f"{value:+.1f}%", "Durum": "✅ Değerli" if value > 0 else "❌ Değersiz"})
-            
-        if acilis_ms2 is not None:
-            kitapci_olasilik = (1 / acilis_ms2) * 100
-            value = dep_oran - kitapci_olasilik
-            value_verileri.append({"Bahis Tipi": "MS 2 (Açılış)", "Girdiğiniz Oran": acilis_ms2, "Büro Olasılığı": f"% {kitapci_olasilik:.1f}", "Gerçekleşen Olasılık": f"% {dep_oran:.1f}", "Sapma (Value)": f"{value:+.1f}%", "Durum": "✅ Değerli" if value > 0 else "❌ Değersiz"})
+        # Bet365 Açılış Matrisi
+        if acilis_ms1 is not None: value_verileri.append({"Bahis Tipi": "MS 1 (B365 Açılış)", "Girdiğiniz Oran": acilis_ms1, "Büro Olasılığı": f"% {(1 / acilis_ms1) * 100:.1f}", "Gerçekleşen Olasılık": f"% {ev_oran:.1f}", "Sapma (Value)": f"{ev_oran - ((1 / acilis_ms1) * 100):+.1f}%", "Durum": "✅ Değerli" if (ev_oran - ((1 / acilis_ms1) * 100)) > 0 else "❌ Değersiz"})
+        if acilis_msx is not None: value_verileri.append({"Bahis Tipi": "MS X (B365 Açılış)", "Girdiğiniz Oran": acilis_msx, "Büro Olasılığı": f"% {(1 / acilis_msx) * 100:.1f}", "Gerçekleşen Olasılık": f"% {ber_oran:.1f}", "Sapma (Value)": f"{ber_oran - ((1 / acilis_msx) * 100):+.1f}%", "Durum": "✅ Değerli" if (ber_oran - ((1 / acilis_msx) * 100)) > 0 else "❌ Değersiz"})
+        if acilis_ms2 is not None: value_verileri.append({"Bahis Tipi": "MS 2 (B365 Açılış)", "Girdiğiniz Oran": acilis_ms2, "Büro Olasılığı": f"% {(1 / acilis_ms2) * 100:.1f}", "Gerçekleşen Olasılık": f"% {dep_oran:.1f}", "Sapma (Value)": f"{dep_oran - ((1 / acilis_ms2) * 100):+.1f}%", "Durum": "✅ Değerli" if (dep_oran - ((1 / acilis_ms2) * 100)) > 0 else "❌ Değersiz"})
 
-        if kapanis_ms1 is not None:
-            kitapci_olasilik = (1 / kapanis_ms1) * 100
-            value = ev_oran - kitapci_olasilik
-            value_verileri.append({"Bahis Tipi": "MS 1 (Kapanış)", "Girdiğiniz Oran": kapanis_ms1, "Büro Olasılığı": f"% {kitapci_olasilik:.1f}", "Gerçekleşen Olasılık": f"% {ev_oran:.1f}", "Sapma (Value)": f"{value:+.1f}%", "Durum": "✅ Değerli" if value > 0 else "❌ Değersiz"})
-            
-        if kapanis_msx is not None:
-            kitapci_olasilik = (1 / kapanis_msx) * 100
-            value = ber_oran - kitapci_olasilik
-            value_verileri.append({"Bahis Tipi": "MS X (Kapanış)", "Girdiğiniz Oran": kapanis_msx, "Büro Olasılığı": f"% {kitapci_olasilik:.1f}", "Gerçekleşen Olasılık": f"% {ber_oran:.1f}", "Sapma (Value)": f"{value:+.1f}%", "Durum": "✅ Değerli" if value > 0 else "❌ Değersiz"})
-            
-        if kapanis_ms2 is not None:
-            kitapci_olasilik = (1 / kapanis_ms2) * 100
-            value = dep_oran - kitapci_olasilik
-            value_verileri.append({"Bahis Tipi": "MS 2 (Kapanış)", "Girdiğiniz Oran": kapanis_ms2, "Büro Olasılığı": f"% {kitapci_olasilik:.1f}", "Gerçekleşen Olasılık": f"% {dep_oran:.1f}", "Sapma (Value)": f"{value:+.1f}%", "Durum": "✅ Değerli" if value > 0 else "❌ Değersiz"})
+        # Bet365 Kapanış Matrisi
+        if kapanis_ms1 is not None: value_verileri.append({"Bahis Tipi": "MS 1 (B365 Kapanış)", "Girdiğiniz Oran": kapanis_ms1, "Büro Olasılığı": f"% {(1 / kapanis_ms1) * 100:.1f}", "Gerçekleşen Olasılık": f"% {ev_oran:.1f}", "Sapma (Value)": f"{ev_oran - ((1 / kapanis_ms1) * 100):+.1f}%", "Durum": "✅ Değerli" if (ev_oran - ((1 / kapanis_ms1) * 100)) > 0 else "❌ Değersiz"})
+        if kapanis_msx is not None: value_verileri.append({"Bahis Tipi": "MS X (B365 Kapanış)", "Girdiğiniz Oran": kapanis_msx, "Büro Olasılığı": f"% {(1 / kapanis_msx) * 100:.1f}", "Gerçekleşen Olasılık": f"% {ber_oran:.1f}", "Sapma (Value)": f"{ber_oran - ((1 / kapanis_msx) * 100):+.1f}%", "Durum": "✅ Değerli" if (ber_oran - ((1 / kapanis_msx) * 100)) > 0 else "❌ Değersiz"})
+        if kapanis_ms2 is not None: value_verileri.append({"Bahis Tipi": "MS 2 (B365 Kapanış)", "Girdiğiniz Oran": kapanis_ms2, "Büro Olasılığı": f"% {(1 / kapanis_ms2) * 100:.1f}", "Gerçekleşen Olasılık": f"% {dep_oran:.1f}", "Sapma (Value)": f"{dep_oran - ((1 / kapanis_ms2) * 100):+.1f}%", "Durum": "✅ Değerli" if (dep_oran - ((1 / kapanis_ms2) * 100)) > 0 else "❌ Değersiz"})
+
+        # Betfair Kapanış Matrisi
+        if kapanis_bf1 is not None: value_verileri.append({"Bahis Tipi": "MS 1 (Betfair)", "Girdiğiniz Oran": kapanis_bf1, "Büro Olasılığı": f"% {(1 / kapanis_bf1) * 100:.1f}", "Gerçekleşen Olasılık": f"% {ev_oran:.1f}", "Sapma (Value)": f"{ev_oran - ((1 / kapanis_bf1) * 100):+.1f}%", "Durum": "✅ Değerli" if (ev_oran - ((1 / kapanis_bf1) * 100)) > 0 else "❌ Değersiz"})
+        if kapanis_bfx is not None: value_verileri.append({"Bahis Tipi": "MS X (Betfair)", "Girdiğiniz Oran": kapanis_bfx, "Büro Olasılığı": f"% {(1 / kapanis_bfx) * 100:.1f}", "Gerçekleşen Olasılık": f"% {ber_oran:.1f}", "Sapma (Value)": f"{ber_oran - ((1 / kapanis_bfx) * 100):+.1f}%", "Durum": "✅ Değerli" if (ber_oran - ((1 / kapanis_bfx) * 100)) > 0 else "❌ Değersiz"})
+        if kapanis_bf2 is not None: value_verileri.append({"Bahis Tipi": "MS 2 (Betfair)", "Girdiğiniz Oran": kapanis_bf2, "Büro Olasılığı": f"% {(1 / kapanis_bf2) * 100:.1f}", "Gerçekleşen Olasılık": f"% {dep_oran:.1f}", "Sapma (Value)": f"{dep_oran - ((1 / kapanis_bf2) * 100):+.1f}%", "Durum": "✅ Değerli" if (dep_oran - ((1 / kapanis_bf2) * 100)) > 0 else "❌ Değersiz"})
             
         if value_verileri:
             st.markdown("#### 📈 Oran vs Gerçeklik Matrisi")
@@ -241,9 +223,10 @@ else:
         if 'HTHG' in sonuclar.columns and 'HTAG' in sonuclar.columns:
             sonuclar['İY_Skor'] = sonuclar.apply(lambda row: skor_yap(row['HTHG'], row['HTAG']), axis=1)
         
+        # Betfair kolonlarını arayüz tablosuna ekliyoruz
         gosterilecek_kolonlar = [
             'Lig', 'Date', 'HomeTeam', 'AwayTeam', 'İY_Skor', 'MS_Skor', 'FTR',
-            'B365H', 'B365D', 'B365A', 'B365CH', 'B365CD', 'B365CA'
+            'B365H', 'B365D', 'B365A', 'B365CH', 'B365CD', 'B365CA', 'BFECH', 'BFECD', 'BFECA'
         ]
         mevcut_gosterim = [col for col in gosterilecek_kolonlar if col in sonuclar.columns]
         
