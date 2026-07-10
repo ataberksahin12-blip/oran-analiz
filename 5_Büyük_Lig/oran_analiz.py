@@ -228,7 +228,7 @@ else:
         if value_verileri:
             st.markdown("#### 📈 Oran vs Gerçeklik Matrisi")
             value_df = pd.DataFrame(value_verileri)
-            st.dataframe(value_df, hide_index=True, use_container_width=True)
+            st.dataframe(value_df, hide_index=True, width="stretch")
             
         st.markdown("---")
 
@@ -238,9 +238,11 @@ else:
 
         if 'FTHG' in sonuclar.columns and 'FTAG' in sonuclar.columns:
             sonuclar['MS_Skor'] = sonuclar.apply(lambda row: skor_yap(row['FTHG'], row['FTAG']), axis=1)
+            sonuclar['MS_Skor'] = sonuclar['MS_Skor'].astype("string")
 
         if 'HTHG' in sonuclar.columns and 'HTAG' in sonuclar.columns:
             sonuclar['İY_Skor'] = sonuclar.apply(lambda row: skor_yap(row['HTHG'], row['HTAG']), axis=1)
+            sonuclar['İY_Skor'] = sonuclar['İY_Skor'].astype("string")
         
         # Betfair kolonlarını arayüz tablosuna ekliyoruz
         gosterilecek_kolonlar = [
@@ -250,7 +252,7 @@ else:
         mevcut_gosterim = [col for col in gosterilecek_kolonlar if col in sonuclar.columns]
         
         st.subheader("📋 Eşleşen Maçların Detay Listesi")
-        st.dataframe(sonuclar[mevcut_gosterim], use_container_width=True)
+        st.dataframe(sonuclar[mevcut_gosterim], width="stretch")
         
         col1, col2 = st.columns(2)
         with col1:
@@ -260,7 +262,7 @@ else:
                 if not gecerli_iy.empty:
                     iy_frekans = gecerli_iy.value_counts()
                     iy_yuzde = gecerli_iy.value_counts(normalize=True) * 100
-                    st.dataframe(pd.DataFrame({'Skor': iy_frekans.index, 'Tekrar': iy_frekans.values, '%': iy_yuzde.values.round(1)}), hide_index=True, use_container_width=True)
+                    st.dataframe(pd.DataFrame({'Skor': iy_frekans.index, 'Tekrar': iy_frekans.values, '%': iy_yuzde.values.round(1)}), hide_index=True, width="stretch")
                 else:
                     st.info("Veri yok.")
             
@@ -271,7 +273,7 @@ else:
                 if not gecerli_ms.empty:
                     ms_frekans = gecerli_ms.value_counts()
                     ms_yuzde = gecerli_ms.value_counts(normalize=True) * 100
-                    st.dataframe(pd.DataFrame({'Skor': ms_frekans.index, 'Tekrar': ms_frekans.values, '%': ms_yuzde.values.round(1)}), hide_index=True, use_container_width=True)
+                    st.dataframe(pd.DataFrame({'Skor': ms_frekans.index, 'Tekrar': ms_frekans.values, '%': ms_yuzde.values.round(1)}), hide_index=True, width="stretch")
                 else:
                     st.info("Veri yok.")
     else:
