@@ -25,22 +25,17 @@ def verileri_oku_v3():
     
     for dosya in tum_dosyalar:
         try:
-            dosya_adi = os.path.basename(dosya)
-            if 'WorldCup' in dosya_adi:
-                gecici_df = pd.read_csv(dosya, encoding='latin1', sep=';')
-            else:
-                gecici_df = pd.read_csv(dosya, encoding='latin1')
-                
+            ...
             gecici_df.rename(columns=sutun_degisimleri, inplace=True)
             gecici_df.columns = gecici_df.columns.str.replace(' ', '')
-            gecici_df['Source_File'] = dosya_adi
-            
-            if 'Lig' not in gecici_df.columns:
-                gecici_df['Lig'] = dosya_adi.replace('.csv', '')
-                
-            # BELLEK PARÇALANMASI (FRAGMENTATION) VE ÇÖKMEYİ ÖNLEYEN KISIM
-            gecici_df = gecici_df.copy()
-                
+        
+            # Tek seferde ek sütunları ata (fragmentation'ı önler)
+            ekstra = pd.DataFrame({
+                'Source_File': [dosya_adi] * len(gecici_df),
+                'Lig': [dosya_adi.replace('.csv','')] * len(gecici_df) if 'Lig' not in gecici_df.columns else gecici_df.get('Lig')
+            })
+            gecici_df = pd.concat([gecici_df, ekstra], axis=1)
+        
             dataframes.append(gecici_df)
         except Exception as e:
             pass
