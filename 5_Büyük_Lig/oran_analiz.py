@@ -99,7 +99,6 @@ def verileri_oku_v3():
 
 
 df = verileri_oku_v3()
-st.write("✅ CHECKPOINT 1: Veri okuma tamamlandı")
 
 if df.empty:
     st.error("Veriler okunamadı. Klasör yolunu kontrol et.")
@@ -133,7 +132,6 @@ else:
     kapanis_bfx = st.sidebar.number_input("MS X Betfair Kapanış (BFECD)", min_value=1.01, value=None, step=0.01, placeholder="Boş")
     kapanis_bf2 = st.sidebar.number_input("MS 2 Betfair Kapanış (BFECA)", min_value=1.01, value=None, step=0.01, placeholder="Boş")
 
-    st.write("✅ CHECKPOINT 2: Sidebar widget'ları oluşturuldu")
 
     sonuclar = df.copy()
 
@@ -170,7 +168,6 @@ else:
         sonuclar = sonuclar.dropna(subset=['BFECA'])
         sonuclar = sonuclar[sonuclar['BFECA'].between(kapanis_bf2 - tolerans, kapanis_bf2 + tolerans)]
 
-    st.write(f"✅ CHECKPOINT 3: Filtreleme tamamlandı. Kalan satır: {len(sonuclar)}")
 
     st.subheader(f"📊 Kriterlere Uyan Toplam Maç Sayısı: {len(sonuclar)}")
 
@@ -180,7 +177,6 @@ else:
         st.info("👈 Lütfen sol menüden lig veya oran girin.")
     elif len(sonuclar) > 0:
 
-        st.write("✅ CHECKPOINT 4: Analiz bloğuna girildi")
 
         st.markdown("---")
         st.markdown("### 📊 Filtreye Özel Ev Sahibi Avantajı (HFA) ve Değer (Value) Analizi")
@@ -198,7 +194,6 @@ else:
         ort_dep_gol = sonuclar['FTAG'].mean() if 'FTAG' in sonuclar.columns else 0
         hfa_gol_avantaji = ort_ev_gol - ort_dep_gol
 
-        st.write("✅ CHECKPOINT 5: Metrikler hesaplandı")
 
         m_col1, m_col2, m_col3, m_col4 = st.columns(4)
         m_col1.metric("Ev Sahibi Galibiyet %", f"% {ev_oran:.1f}")
@@ -206,7 +201,6 @@ else:
         m_col3.metric("Deplasman Galibiyet %", f"% {dep_oran:.1f}")
         m_col4.metric("HFA Gol Dominansı", f"+{hfa_gol_avantaji:.2f}" if hfa_gol_avantaji >= 0 else f"{hfa_gol_avantaji:.2f}")
 
-        st.write("✅ CHECKPOINT 6: Metrik kutuları gösterildi")
 
         value_verileri = []
 
@@ -222,14 +216,11 @@ else:
         if kapanis_bfx is not None: value_verileri.append({"Bahis Tipi": "MS X (Betfair)", "Girdiğiniz Oran": kapanis_bfx, "Büro Olasılığı": f"% {(1 / kapanis_bfx) * 100:.1f}", "Gerçekleşen Olasılık": f"% {ber_oran:.1f}", "Sapma (Value)": f"{ber_oran - ((1 / kapanis_bfx) * 100):+.1f}%", "Durum": "✅ Değerli" if (ber_oran - ((1 / kapanis_bfx) * 100)) > 0 else "❌ Değersiz"})
         if kapanis_bf2 is not None: value_verileri.append({"Bahis Tipi": "MS 2 (Betfair)", "Girdiğiniz Oran": kapanis_bf2, "Büro Olasılığı": f"% {(1 / kapanis_bf2) * 100:.1f}", "Gerçekleşen Olasılık": f"% {dep_oran:.1f}", "Sapma (Value)": f"{dep_oran - ((1 / kapanis_bf2) * 100):+.1f}%", "Durum": "✅ Değerli" if (dep_oran - ((1 / kapanis_bf2) * 100)) > 0 else "❌ Değersiz"})
 
-        st.write("✅ CHECKPOINT 7: Value listesi oluşturuldu (henüz DataFrame'e çevrilmedi)")
 
         if value_verileri:
             st.markdown("#### 📈 Oran vs Gerçeklik Matrisi")
             value_df = pd.DataFrame(value_verileri)
-            st.write("✅ CHECKPOINT 8: value_df oluşturuldu")
             st.dataframe(value_df, hide_index=True, width="stretch")
-            st.write("✅ CHECKPOINT 9: value_df gösterildi")
 
         st.markdown("---")
 
@@ -241,13 +232,11 @@ else:
             sonuclar['MS_Skor'] = sonuclar.apply(lambda row: skor_yap(row['FTHG'], row['FTAG']), axis=1)
             sonuclar['MS_Skor'] = sonuclar['MS_Skor'].astype("string")
 
-        st.write("✅ CHECKPOINT 10: MS_Skor oluşturuldu")
 
         if 'HTHG' in sonuclar.columns and 'HTAG' in sonuclar.columns:
             sonuclar['İY_Skor'] = sonuclar.apply(lambda row: skor_yap(row['HTHG'], row['HTAG']), axis=1)
             sonuclar['İY_Skor'] = sonuclar['İY_Skor'].astype("string")
 
-        st.write("✅ CHECKPOINT 11: İY_Skor oluşturuldu")
 
         gosterilecek_kolonlar = [
             'Lig', 'Date', 'HomeTeam', 'AwayTeam', 'İY_Skor', 'MS_Skor', 'FTR',
@@ -256,9 +245,7 @@ else:
         mevcut_gosterim = [col for col in gosterilecek_kolonlar if col in sonuclar.columns]
 
         st.subheader("📋 Eşleşen Maçların Detay Listesi")
-        st.write("✅ CHECKPOINT 12: Ana tablo gösterilmeden hemen önce")
         st.dataframe(sonuclar[mevcut_gosterim], width="stretch")
-        st.write("✅ CHECKPOINT 13: Ana tablo gösterildi")
 
         col1, col2 = st.columns(2)
         with col1:
@@ -272,7 +259,6 @@ else:
                 else:
                     st.info("Veri yok.")
 
-        st.write("✅ CHECKPOINT 14: İY skor tablosu gösterildi")
 
         with col2:
             st.subheader("🎯 MS Skorları")
@@ -285,6 +271,5 @@ else:
                 else:
                     st.info("Veri yok.")
 
-        st.write("✅ CHECKPOINT 15: MS skor tablosu gösterildi — TÜM SAYFA TAMAMLANDI")
     else:
         st.warning("Bu kombinasyona uyan maç bulunamadı.")
