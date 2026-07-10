@@ -38,6 +38,9 @@ def verileri_oku_v3():
             if 'Lig' not in gecici_df.columns:
                 gecici_df['Lig'] = dosya_adi.replace('.csv', '')
                 
+            # BELLEK PARÇALANMASI (FRAGMENTATION) VE ÇÖKMEYİ ÖNLEYEN KISIM
+            gecici_df = gecici_df.copy()
+                
             dataframes.append(gecici_df)
         except Exception as e:
             pass
